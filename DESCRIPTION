@@ -1,11 +1,20 @@
 Package: pkgscreen
-Title: What the Package Does (One Line, Title Case)
+Title: A Shiny App for Systematic R Package Screening
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person(
+    "Krisanat", "Anukarnsakulchularp",
+    email = "krisanat.anu@gmail.com",
+    role = c("aut", "cre", "cph"),
+    comment = c(ORCID = "0009-0008-5638-7124")
+    )
+Description: A Shiny app for screening and selecting R packages during a
+    systematic review. Searched packages are presented one at a time
+    with extra information such as package descriptions for an include
+    or exclude decision, with the option to provide the reasons for
+    exclusions. The decisions can be saved locally as a CSV file or
+    synced to a Google Sheet.
+License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
