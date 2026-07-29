@@ -31,7 +31,7 @@ server <- function(input, output, session) {
 
   # loading the data
   if (nzchar(app_sheet)) {
-    df <- read_sheet(app_sheet, sheet = "review")
+    df <- googlesheets4::read_sheet(app_sheet, sheet = "review")
     if (nrow(df) > 0) {
       decisions(setNames(
         lapply(seq_len(nrow(df)), function(i) {
@@ -200,7 +200,7 @@ server <- function(input, output, session) {
         data.frame(package = pkg, d[[pkg]], stringsAsFactors = FALSE)
       })
     )
-    sheet_write(df, ss = app_sheet, sheet = "new_review")
+    googlesheets4::sheet_write(df, ss = app_sheet, sheet = "new_review")
   })
 
   # download handler

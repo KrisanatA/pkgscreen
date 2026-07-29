@@ -21,6 +21,7 @@ RoxygenNote: 7.3.3
 URL: https://github.com/KrisanatA/pkgscreen
 BugReports: https://github.com/KrisanatA/pkgscreen/issues
 Imports: 
+    googlesheets4,
     pkgsearch,
     shiny,
     stringr
