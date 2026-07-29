@@ -20,12 +20,33 @@ highlight <- function(text, query) {
   HTML(highlight_txt)
 }
 
+show_val <- function(x) if (is.null(x) || is.na(x)) "-" else x
+
 server <- function(input, output, session) {
   # set up reactive values
   results <- reactiveVal(NULL)
   idx <- reactiveVal(1)
   decisions <- reactiveVal(list())
   active_query <- reactiveVal("")
+
+  # loading the data
+  if (nzchar(app_sheet)) {
+    df <- read_sheet(app_sheet, sheet = "review")
+    if (nrow(df) > 0) {
+      decisions(setNames(
+        lapply(seq_len(nrow(df)), function(i) {
+          list(
+            decision = df$decision[i],
+            reason = df$reason[i],
+            title = df$title[i],
+            version = df$version[i],
+            date = df$date[i]
+          )
+        }),
+        df$package
+      ))
+    }
+  }
 
   # search (pkgsearch)
   observeEvent(input$search, {
@@ -75,27 +96,35 @@ server <- function(input, output, session) {
         "Status: ",
         status
       ),
-      p(strong("Title: "), pk$title),
+      p(strong("Title: "), show_val(pk$title)),
       p(
         strong("Description: "),
-        highlight(pk$description, active_query())
+        if (is.na(pk$description)) {
+          "-"
+        } else {
+          highlight(pk$description, active_query())
+        }
       ),
       p(strong("Version: "), as.character(pk$version)),
       p(
         strong("Last release: "),
         sprintf("%s (%d days ago)", rel_date, days_old)
       ),
-      p(strong("License: "), pk$license),
-      p(strong("Maintainer: "), pk$maintainer_name),
-      p(strong("Downloads (last month): "), pk$downloads_last_month),
-      p(strong("Reverse dependencies: "), pk$revdeps),
+      p(strong("License: "), show_val(pk$license)),
+      p(strong("Maintainer: "), show_val(pk$maintainer_name)),
+      p(strong("Downloads (last month): "), show_val(pk$downloads_last_month)),
+      p(strong("Reverse dependencies: "), show_val(pk$revdeps)),
       p(
         strong("URL: "),
-        if (is.null(pk$url)) "-" else link(pk$url)
+        if (is.null(pk$url) || is.na(pk$url)) "-" else link(pk$url)
       ),
       p(
         strong("Bug reports: "),
-        if (is.null(pk$bugreports)) "-" else link(pk$url)
+        if (is.null(pk$bugreports) || is.na(pk$bugreports)) {
+          "-"
+        } else {
+          link(pk$bugreports)
+        }
       )
     )
   })
@@ -159,6 +188,19 @@ server <- function(input, output, session) {
       length(d) - length(inc),
       paste(inc, collapse = "\n")
     )
+  })
+
+  # save to google sheet
+  observeEvent(input$save_sheet, {
+    d <- decisions()
+    req(length(d) > 0)
+    df <- do.call(
+      rbind,
+      lapply(names(d), function(pkg) {
+        data.frame(package = pkg, d[[pkg]], stringsAsFactors = FALSE)
+      })
+    )
+    sheet_write(df, ss = app_sheet, sheet = "new_review")
   })
 
   # download handler
