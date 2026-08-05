@@ -31,7 +31,7 @@ server <- function(input, output, session) {
 
   # loading the data
   if (nzchar(app_sheet)) {
-    df <- googlesheets4::read_sheet(app_sheet, sheet = "review")
+    df <- googlesheets4::read_sheet(app_ss, sheet = app_sheet)
     if (nrow(df) > 0) {
       decisions(setNames(
         lapply(seq_len(nrow(df)), function(i) {
@@ -51,7 +51,7 @@ server <- function(input, output, session) {
   # search (pkgsearch)
   observeEvent(input$search, {
     req(nzchar(input$query))
-    results(pkg_search(input$query, size = input$n))
+    results(advanced_search(input$query, size = input$n))
     active_query(input$query)
     idx(1)
   })
@@ -200,7 +200,11 @@ server <- function(input, output, session) {
         data.frame(package = pkg, d[[pkg]], stringsAsFactors = FALSE)
       })
     )
-    googlesheets4::sheet_write(df, ss = app_sheet, sheet = "new_review")
+    googlesheets4::sheet_write(
+      df,
+      ss = app_ss,
+      sheet = paste0("new-", app_sheet)
+    )
   })
 
   # download handler
