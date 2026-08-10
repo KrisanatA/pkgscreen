@@ -12,9 +12,6 @@ link <- function(x) {
 highlight <- function(text, query) {
   txt <- htmltools::htmlEscape(text)
 
-  # Drop boolean operators/parentheses so terms like "AND"/"OR"/"NOT"
-  # themselves are never highlighted, e.g. "(network OR graph) AND (storage
-  # OR store OR object OR structure) NOT (equation)".
   terms <- query |>
     str_remove_all(regex("\\b(and|or|not)\\b", ignore_case = TRUE)) |>
     str_remove_all("[()]") |>
@@ -263,9 +260,18 @@ server <- function(input, output, session) {
     )
   })
 
+  current_decisions <- reactive({
+    d <- decisions()
+    res <- results()
+    if (is.null(res)) {
+      return(list())
+    }
+    d[names(d) %in% res$package]
+  })
+
   # save to google sheet
   observeEvent(input$save_sheet, {
-    d <- decisions()
+    d <- current_decisions()
     req(length(d) > 0)
     df <- do.call(
       rbind,
@@ -284,7 +290,7 @@ server <- function(input, output, session) {
   output$download <- downloadHandler(
     filename = "package_review.csv",
     content = function(file) {
-      d <- decisions()
+      d <- current_decisions()
       if (length(d) == 0) {
         write.csv(data.frame(), file, row.names = FALSE)
         return(invisible())
