@@ -1,6 +1,20 @@
 library(shiny)
+library(bslib)
+
+# theme
+theme_choices <- c(
+  "Darkly (default)" = "darkly",
+  "Cyborg" = "cyborg",
+  "Superhero" = "superhero",
+  "Slate" = "slate",
+  "Flatly" = "flatly",
+  "Zephyr" = "zephyr",
+  "Cosmo" = "cosmo",
+  "Minty" = "minty"
+)
 
 ui <- fluidPage(
+  theme = bs_theme(version = 5, preset = "darkly"),
   titlePanel("Package Systematic Review"),
   sidebarLayout(
     # side bar
@@ -26,6 +40,21 @@ ui <- fluidPage(
     mainPanel(
       uiOutput("pkg_card"),
       uiOutput("controls")
+    )
+  ),
+  # Theme picker
+  tags$div(
+    style = paste(
+      "position: fixed; bottom: 16px; right: 16px; z-index: 1050;",
+      "background: var(--bs-body-bg); padding: 6px 10px;",
+      "border-radius: 6px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);"
+    ),
+    selectInput(
+      "app_theme",
+      "Theme",
+      choices = theme_choices,
+      selected = "darkly",
+      width = "160px"
     )
   ),
   includeCSS("styles.css")

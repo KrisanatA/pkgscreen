@@ -23,6 +23,13 @@ highlight <- function(text, query) {
 show_val <- function(x) if (is.null(x) || is.na(x)) "-" else x
 
 server <- function(input, output, session) {
+  # theme picker
+  observeEvent(input$app_theme, {
+    session$setCurrentTheme(
+      bslib::bs_theme(version = 5, preset = input$app_theme)
+    )
+  })
+
   # set up reactive values
   results <- reactiveVal(NULL)
   idx <- reactiveVal(1)
