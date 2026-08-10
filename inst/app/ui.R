@@ -9,6 +9,13 @@ ui <- fluidPage(
       numericInput("n", "Number of packages", value = 20, min = 1, max = NA),
       actionButton("search", "Search"),
       hr(),
+      dateRangeInput(
+        "date_filter",
+        "Last release between",
+        start = NULL,
+        end = NULL
+      ),
+      hr(),
       h4("Progress"),
       verbatimTextOutput("summary"),
       actionButton("save_sheet", "Save to Sheet", class = "btn-primary btn-sm"),

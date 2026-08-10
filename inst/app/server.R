@@ -51,22 +51,53 @@ server <- function(input, output, session) {
   # search (pkgsearch)
   observeEvent(input$search, {
     req(nzchar(input$query))
-    results(advanced_search(input$query, size = input$n))
+    res <- advanced_search(input$query, size = input$n)[]
+    results(res)
     active_query(input$query)
+    rel_dates <- as.Date(res$date)
+    updateDateRangeInput(
+      session,
+      "date_filter",
+      start = min(rel_dates, na.rm = TRUE),
+      end = max(rel_dates, na.rm = TRUE),
+      min = min(rel_dates, na.rm = TRUE),
+      max = max(rel_dates, na.rm = TRUE)
+    )
     idx(1)
   })
 
-  current <- reactive({
+  filtered <- reactive({
     res <- results()
+    if (is.null(res)) {
+      return(NULL)
+    }
+    keep <- rep(TRUE, nrow(res))
+    if (!is.null(input$date_filter) && !anyNA(input$date_filter)) {
+      rel_dates <- as.Date(res$date)
+      keep <- !is.na(rel_dates) &
+        rel_dates >= input$date_filter[1] &
+        rel_dates <= input$date_filter[2]
+    }
+    out <- res[keep, , drop = FALSE]
+    out
+  })
+
+  observeEvent(input$date_filter, idx(1))
+
+  current <- reactive({
+    res <- filtered()
     req(res, idx() >= 1, idx() <= nrow(res))
     res[idx(), ]
   })
 
   # package card
   output$pkg_card <- renderUI({
-    res <- results()
-    if (is.null(res)) {
+    if (is.null(results())) {
       return(p("Search for packages to begin reviewing process."))
+    }
+    res <- filtered()
+    if (nrow(res) == 0) {
+      return(p("No packages match the current date filter."))
     }
     pk <- current()
     d <- decisions()[[pk$package]]
@@ -157,7 +188,7 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$prev_btn, if (idx() > 1) idx(idx() - 1))
-  observeEvent(input$next_btn, if (idx() < nrow(results())) idx(idx() + 1))
+  observeEvent(input$next_btn, if (idx() < nrow(filtered())) idx(idx() + 1))
 
   record <- function(decision) {
     pk <- current()
@@ -171,7 +202,7 @@ server <- function(input, output, session) {
     )
     decisions(d)
     updateTextInput(session, "reason", value = "")
-    if (idx() < nrow(results())) idx(idx() + 1)
+    if (idx() < nrow(filtered())) idx(idx() + 1)
   }
 
   observeEvent(input$include, record("include"))
