@@ -3,3 +3,9 @@ mark {
   background-color: yellow !important;
 }
 
+#theme-picker .selectize-dropdown {
+  top: auto !important;
+  bottom: 100%;
+  margin-bottom: 4px;
+}
+

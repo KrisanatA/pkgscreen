@@ -44,6 +44,7 @@ ui <- fluidPage(
   ),
   # Theme picker
   tags$div(
+    id = "theme-picker",
     style = paste(
       "position: fixed; bottom: 16px; right: 16px; z-index: 1050;",
       "background: var(--bs-body-bg); padding: 6px 10px;",
