@@ -11,7 +11,26 @@ link <- function(x) {
 
 highlight <- function(text, query) {
   txt <- htmltools::htmlEscape(text)
-  pattern <- paste0("(", str_replace_all(query, " ", "|"), ")")
+
+  # Drop boolean operators/parentheses so terms like "AND"/"OR"/"NOT"
+  # themselves are never highlighted, e.g. "(network OR graph) AND (storage
+  # OR store OR object OR structure) NOT (equation)".
+  terms <- query |>
+    str_remove_all(regex("\\b(and|or|not)\\b", ignore_case = TRUE)) |>
+    str_remove_all("[()]") |>
+    str_split_1("\\s+")
+  terms <- terms[nzchar(terms)]
+
+  if (length(terms) == 0) {
+    return(HTML(txt))
+  }
+
+  escaped_terms <- str_replace_all(
+    terms,
+    "([\\\\^$.|?*+()\\[\\]{}])",
+    "\\\\\\1"
+  )
+  pattern <- paste0("(", paste(escaped_terms, collapse = "|"), ")")
   highlight_txt <- str_replace_all(
     txt,
     regex(pattern, ignore_case = TRUE),
@@ -175,8 +194,12 @@ server <- function(input, output, session) {
     })))
     tagList(
       fluidRow(
-        column(6, actionButton("prev_btn", "< Previous")),
-        column(6, actionButton("next_btn", "Next >"))
+        column(4, actionButton("prev_btn", "< Previous")),
+        column(4, actionButton("next_btn", "Next >")),
+        column(
+          4,
+          actionButton("first_unreviewed_btn", "First unreviewed")
+        )
       ),
       hr(),
       selectizeInput(
@@ -196,6 +219,18 @@ server <- function(input, output, session) {
 
   observeEvent(input$prev_btn, if (idx() > 1) idx(idx() - 1))
   observeEvent(input$next_btn, if (idx() < nrow(filtered())) idx(idx() + 1))
+
+  observeEvent(input$first_unreviewed_btn, {
+    res <- filtered()
+    req(res)
+    reviewed <- names(decisions())
+    unreviewed <- which(!res$package %in% reviewed)
+    if (length(unreviewed) > 0) {
+      idx(unreviewed[1])
+    } else {
+      showNotification("All packages have been reviewed.", type = "message")
+    }
+  })
 
   record <- function(decision) {
     pk <- current()
