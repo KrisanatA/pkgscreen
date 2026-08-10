@@ -38,6 +38,34 @@ highlight <- function(text, query) {
 
 show_val <- function(x) if (is.null(x) || is.na(x)) "-" else x
 
+na_if_null <- function(x) if (is.null(x)) NA else x
+
+decisions_to_df <- function(d) {
+  field <- function(name) {
+    vapply(
+      d,
+      function(x) {
+        val <- x[[name]]
+        if (is.null(val) || length(val) == 0) {
+          NA_character_
+        } else {
+          as.character(val)
+        }
+      },
+      character(1)
+    )
+  }
+  data.frame(
+    package = names(d),
+    decision = field("decision"),
+    reason = field("reason"),
+    title = field("title"),
+    version = field("version"),
+    date = field("date"),
+    stringsAsFactors = FALSE
+  )
+}
+
 server <- function(input, output, session) {
   # theme picker
   observeEvent(input$app_theme, {
@@ -59,11 +87,11 @@ server <- function(input, output, session) {
       decisions(setNames(
         lapply(seq_len(nrow(df)), function(i) {
           list(
-            decision = df$decision[i],
-            reason = df$reason[i],
-            title = df$title[i],
-            version = df$version[i],
-            date = df$date[i]
+            decision = na_if_null(df$decision[i]),
+            reason = na_if_null(df$reason[i]),
+            title = na_if_null(df$title[i]),
+            version = na_if_null(df$version[i]),
+            date = na_if_null(df$date[i])
           )
         }),
         df$package
@@ -234,10 +262,10 @@ server <- function(input, output, session) {
     d <- decisions()
     d[[pk$package]] <- list(
       decision = decision,
-      reason = if (decision == "exclude") input$reason else "",
-      title = pk$title,
-      version = as.character(pk$version),
-      date = as.character(as.Date(pk$date))
+      reason = if (decision == "exclude") na_if_null(input$reason) else "",
+      title = na_if_null(pk$title),
+      version = na_if_null(as.character(pk$version)),
+      date = na_if_null(as.character(as.Date(pk$date)))
     )
     decisions(d)
     updateTextInput(session, "reason", value = "")
@@ -273,12 +301,7 @@ server <- function(input, output, session) {
   observeEvent(input$save_sheet, {
     d <- current_decisions()
     req(length(d) > 0)
-    df <- do.call(
-      rbind,
-      lapply(names(d), function(pkg) {
-        data.frame(package = pkg, d[[pkg]], stringsAsFactors = FALSE)
-      })
-    )
+    df <- decisions_to_df(d)
     googlesheets4::sheet_write(
       df,
       ss = app_ss,
@@ -295,13 +318,7 @@ server <- function(input, output, session) {
         write.csv(data.frame(), file, row.names = FALSE)
         return(invisible())
       }
-      df <- do.call(
-        rbind,
-        lapply(names(d), function(pkg) {
-          data.frame(package = pkg, d[[pkg]], stringsAsFactors = FALSE)
-        })
-      )
-      write.csv(df, file, row.names = FALSE)
+      write.csv(decisions_to_df(d), file, row.names = FALSE)
     }
   )
 }
